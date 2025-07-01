@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🍆 Naughty Touch Shooter 💦</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <style>
+    html, body {
+      margin: 0; padding: 0;
+      background: black;
+      overflow: hidden;
+      font-family: Comic Sans MS, cursive;
+      user-select: none;
+      touch-action: manipulation;
+      height: 100vh;
+      width: 100vw;
+    }
+    #startScreen, #gameOver, #bossBar {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      text-align: center;
+      z-index: 10;
+      user-select: none;
+    }
+    #startScreen button, #gameOver button {
+      padding: 12px 24px;
+      font-size: 20px;
+      background: hotpink;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    #startScreen button:hover, #gameOver button:hover {
+      background: deeppink;
+    }
+    #scoreBoard {
+      position: absolute;
+      top: 10px; left: 10px;
+      font-size: 22px;
+      color: hotpink;
+      background: rgba(0,0,0,0.6);
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 2px solid hotpink;
+      z-index: 5;
+      display: none;
+      min-width: 130px;
+      text-align: center;
+      font-weight: bold;
+      text-shadow: 0 0 6px hotpink;
+    }
+    #bossHealthContainer {
+      position: absolute;
+      top: 20px; right: 10px;
+      width: 200px;
+      height: 20px;
+      border: 2px solid red;
+      display: none;
+      background: rgba(255,0,0,0.1);
+      z-index: 6;
+    }
+    #bossHealthBar {
+      height: 100%;
+      background: red;
+      width: 100%;
+    }
+    #praise {
+      position: absolute;
+      bottom: 20%;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 32px;
+      font-weight: 900;
+      color: yellow;
+      text-shadow:
+        0 0 5px #ff0,
+        0 0 10px #ff0,
+        0 0 20px #ffa500,
+        0 0 30px #ffa500,
+        0 0 40px #ff4500;
+      display: none;
+      z-index: 15;
+      user-select: none;
+      pointer-events: none;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      background: black;
+      cursor: crosshair;
+    }
+  </style>
+</head>
+<body>
+  <div id="startScreen">
+    <h1 style="color: hotpink; text-shadow: 0 0 10px deeppink;">🍆 Naughty Touch Shooter 💦</h1>
+    <button id="startBtn">Start Game</button>
+  </div>
+  <div id="scoreBoard">
+    Score: <span id="score">0</span><br />
+    Combo: <span id="combo">0</span>
+  </div>
+  <div id="bossHealthContainer">
+    <div id="bossHealthBar"></div>
+  </div>
+  <div id="praise">Nice shot!</div>
+  <div id="gameOver" style="display:none;">
+    <h2>You just don't have the touch 😔</h2>
+    <p>Try again, lazy fingers.</p>
+    <button id="restartBtn">Restart</button>
+  </div>
+  <canvas id="gameCanvas"></canvas>
+  <audio id="tapSound" src="Tap.mp3" preload="auto"></audio>
+  <audio id="dieSound" src="Die.mp3" preload="auto"></audio>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let gameRunning = false;
+    let score = 0;
+    let combo = 0;
+    let targets = [];
+    let hitLines = [];
+
+    const imageNames = ["BUTT", "CUM", "DONG", "TITS"];
+    const loadedImages = {};
+    imageNames.forEach(name => {
+      const img = new Image();
+      img.src = name + ".png";
+      loadedImages[name] = img;
+    });
+
+    let bossActive = false;
+    let bossHealth = 100;
+    const bossThreshold = 30;
+
+    const scoreDisplay = document.getElementById("score");
+    const comboDisplay = document.getElementById("combo");
+    const tapSound = document.getElementById("tapSound");
+    const dieSound = document.getElementById("dieSound");
+
+    function spawnTarget() {
+      const x = Math.random() * (canvas.width - 180);
+      const word = imageNames[Math.floor(Math.random() * imageNames.length)];
+      targets.push({
+        x,
+        y: canvas.height + 100,
+        speed: 1 + Math.random() * 1.5,
+        word,
+        pulsePhase: 0,
+        isBoss: false
+      });
+    }
+
+    function spawnBoss() {
+      bossActive = true;
+      bossHealth = 100;
+      document.getElementById("bossHealthContainer").style.display = "block";
+      targets.push({
+        x: canvas.width / 2 - 90,
+        y: canvas.height + 120,
+        speed: 1.2,
+        word: "BOSS",
+        pulsePhase: 0,
+        isBoss: true
+      });
+    }
+
+    function updateBossHealth(damage) {
+      bossHealth -= damage;
+      if (bossHealth <= 0) {
+        bossDefeated();
+      }
+      document.getElementById("bossHealthBar").style.width = bossHealth + "%";
+    }
+
+    function bossDefeated() {
+      bossActive = false;
+      document.getElementById("bossHealthContainer").style.display = "none";
+      score += 10;
+      updateScore();
+      showPraise("Boss Defeated!");
+    }
+
+    function checkForBossTrigger() {
+      if (!bossActive && score >= bossThreshold) {
+        spawnBoss();
+      }
+    }
+
+    function updateScore() {
+      scoreDisplay.textContent = score;
+    }
+
+    function incrementCombo() {
+      combo++;
+      comboDisplay.textContent = combo;
+    }
+
+    function resetCombo() {
+      combo = 0;
+      comboDisplay.textContent = combo;
+    }
+
+    function showPraise(text = "Nice shot!") {
+      const praise = document.getElementById("praise");
+      praise.textContent = text;
+      praise.style.display = "block";
+      setTimeout(() => praise.style.display = "none", 800);
+    }
+
+    function drawTargets() {
+      targets.forEach((t, i) => {
+        t.y -= t.speed;
+        if (t.isBoss) {
+          ctx.fillStyle = "red";
+          ctx.font = "bold 48px Comic Sans MS";
+          ctx.fillText("👿 BOSS 👿", t.x, t.y);
+        } else {
+          const img = loadedImages[t.word];
+          if (img.complete) {
+            ctx.drawImage(img, t.x, t.y - 100, 180, 100);
+          }
+        }
+        if (t.y < -100 && !t.isBoss) {
+          gameOver();
+        }
+      });
+    }
+
+    function drawHitLines() {
+      hitLines.forEach((l, index) => {
+        ctx.strokeStyle = "yellow";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(l.x1, l.y1);
+        ctx.lineTo(l.x2, l.y2);
+        ctx.stroke();
+        l.life--;
+        if (l.life <= 0) hitLines.splice(index, 1);
+      });
+    }
+
+    function shoot(x, y) {
+      if (!gameRunning) return;
+      for (let i = targets.length - 1; i >= 0; i--) {
+        const t = targets[i];
+        if (x > t.x && x < t.x + 180 && y > t.y - 100 && y < t.y) {
+          hitLines.push({ x1: x, y1: y, x2: t.x + 90, y2: t.y - 50, life: 12 });
+          if (t.isBoss) {
+            updateBossHealth(10);
+          } else {
+            targets.splice(i, 1);
+            score++;
+            updateScore();
+            incrementCombo();
+            showPraise();
+            tapSound.currentTime = 0;
+            tapSound.play();
+          }
+          return;
+        }
+      }
+      resetCombo();
+    }
+
+    function gameLoop() {
+      if (!gameRunning) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawTargets();
+      drawHitLines();
+      checkForBossTrigger();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function startGame() {
+      score = 0;
+      combo = 0;
+      targets = [];
+      hitLines = [];
+      bossActive = false;
+      updateScore();
+      resetCombo();
+      document.getElementById("startScreen").style.display = "none";
+      document.getElementById("scoreBoard").style.display = "block";
+      document.getElementById("gameOver").style.display = "none";
+      gameRunning = true;
+      setInterval(() => {
+        if (gameRunning) spawnTarget();
+      }, 1000);
+      gameLoop();
+    }
+
+    function gameOver() {
+      gameRunning = false;
+      dieSound.currentTime = 0;
+      dieSound.play();
+      document.getElementById("gameOver").style.display = "block";
+    }
+
+    document.getElementById("startBtn").addEventListener("click", startGame);
+    document.getElementById("restartBtn").addEventListener("click", startGame);
+    canvas.addEventListener("mousedown", e => shoot(e.clientX, e.clientY));
+    canvas.addEventListener("touchstart", e => {
+      const touch = e.touches[0];
+      shoot(touch.clientX, touch.clientY);
+    });
+  </script>
+</body>
+</html>
