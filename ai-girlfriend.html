@@ -207,18 +207,75 @@
     const sendBtn = document.getElementById('sendBtn');
     const clearBtn = document.getElementById('clearBtn');
 
- const imageMap = {
-      love: "https://github.com/Crotch-dot/DJDog/blob/main/ruby1%20(6).png",
-      miss: "https://github.com/Crotch-dot/DJDog/blob/main/ruby1%20(8).png",
-      date: "https://github.com/Crotch-dot/DJDog/blob/main/ruby1%20(15).png",
-      sweet: "https://github.com/Crotch-dot/DJDog/blob/main/ruby1%20(16).png",
-      naughty: "https://github.com/Crotch-dot/DJDog/blob/main/ruby1%20(8).png",
-      kiss: "https://github.com/Crotch-dot/DJDog/blob/main/ruby1%20(2).png",
-      hug: "https://github.com/Crotch-dot/DJDog/blob/main/ruby1%20(2).png",
-      sleep: "https://github.com/Crotch-dot/DJDog/blob/main/ruby1%20(17).png",
-      sexy: "https://github.com/Crotch-dot/DJDog/blob/main/ruby1%20(6).png",
-      default: "https://github.com/Crotch-dot/DJDog/blob/main/ruby1%20(17).png"
+    const imageMap = {
+      love: "https://raw.githubusercontent.com/Crotch-dot/DJDog/main/ruby1%20(6).png",
+      miss: "https://raw.githubusercontent.com/Crotch-dot/DJDog/main/ruby1%20(8).png",
+      date: "https://raw.githubusercontent.com/Crotch-dot/DJDog/main/ruby1%20(15).png",
+      sweet: "https://raw.githubusercontent.com/Crotch-dot/DJDog/main/ruby1%20(16).png",
+      naughty: "https://raw.githubusercontent.com/Crotch-dot/DJDog/main/ruby1%20(8).png",
+      kiss: "https://raw.githubusercontent.com/Crotch-dot/DJDog/main/ruby1%20(2).png",
+      hug: "https://raw.githubusercontent.com/Crotch-dot/DJDog/main/ruby1%20(2).png",
+      sleep: "https://raw.githubusercontent.com/Crotch-dot/DJDog/main/ruby1%20(17).png",
+      sexy: "https://raw.githubusercontent.com/Crotch-dot/DJDog/main/ruby1%20(6).png",
+      default: "https://raw.githubusercontent.com/Crotch-dot/DJDog/main/ruby1%20(17).png"
     };
+
+    function getImage(txt) {
+      const lower = txt.toLowerCase();
+      for (const key in imageMap) {
+        if (lower.includes(key)) return imageMap[key];
+      }
+      return imageMap.default;
+    }
+
+    function appendMessage(text, className) {
+      const container = document.createElement('div');
+      container.style.display = 'flex';
+      container.style.flexDirection = 'column';
+      container.style.alignItems = className === 'user' ? 'flex-end' : 'flex-start';
+
+      const msg = document.createElement('div');
+      msg.className = `message ${className}`;
+      msg.innerHTML = text;
+
+      const time = document.createElement('div');
+      time.className = 'timestamp';
+      time.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      container.appendChild(msg);
+      container.appendChild(time);
+      chatBox.appendChild(container);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function sendMessage() {
+      const text = input.value.trim();
+      if (!text) return;
+
+      appendMessage(text, 'user');
+      input.value = '';
+
+      aiImage.src = getImage(text);
+
+      setTimeout(() => {
+        const reply = "I'll respond later!";
+        appendMessage(reply, 'ai');
+      }, 1000);
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+
+    clearBtn.addEventListener('click', () => {
+      chatBox.innerHTML = '';
+      input.value = '';
+      aiImage.src = imageMap.default;
+    });
+
+    // Initialize default image on load
+    aiImage.src = imageMap.default;
 
     const linkMap = {
       games: 'https://browndoggames.com/my-games.html',
