@@ -3,16 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alien Booger Blaster</title>
+    <title>Enhanced Alien Booger Blaster</title>
     <style>
         body {
             font-family: 'Comic Sans MS', sans-serif;
-            background-color: #2c3e50;
+            background: linear-gradient(45deg, #1a1a2e, #16213e, #0f3460);
             text-align: center;
             margin: 0;
             padding: 0;
             color: white;
             overflow: hidden;
+            animation: backgroundPulse 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes backgroundPulse {
+            0% { background: linear-gradient(45deg, #1a1a2e, #16213e, #0f3460); }
+            100% { background: linear-gradient(45deg, #0f3460, #1a1a2e, #16213e); }
         }
 
         #gameContainer {
@@ -24,238 +30,733 @@
         h1 {
             color: #ff6347;
             font-size: 3rem;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.8), 0 0 20px #ff6347;
             z-index: 10;
+            animation: titleGlow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes titleGlow {
+            0% { text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.8), 0 0 20px #ff6347; }
+            100% { text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.8), 0 0 30px #ff1744, 0 0 40px #ff6347; }
         }
 
         #gameArea {
             position: relative;
             width: 100vw;
-            height: 70vh; /* Adjusted height for better visibility of score and timer */
-            background-image: url('https://tse2.mm.bing.net/th/id/OIP.yivXiv0szxl24RSCk820rQHaC5?rs=1&pid=ImgDetMain&o=7&rm=3');
-            background-size: cover;
+            height: 70vh;
+            background: radial-gradient(circle at center, rgba(25, 25, 112, 0.3), rgba(0, 0, 0, 0.8)),
+                        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="1" fill="white" opacity="0.8"><animate attributeName="opacity" values="0.8;0.2;0.8" dur="3s" repeatCount="indefinite"/></circle><circle cx="80" cy="30" r="1" fill="white" opacity="0.6"><animate attributeName="opacity" values="0.6;0.1;0.6" dur="4s" repeatCount="indefinite"/></circle><circle cx="40" cy="70" r="1" fill="white" opacity="0.9"><animate attributeName="opacity" values="0.9;0.3;0.9" dur="2s" repeatCount="indefinite"/></circle><circle cx="60" cy="90" r="1" fill="white" opacity="0.7"><animate attributeName="opacity" values="0.7;0.2;0.7" dur="5s" repeatCount="indefinite"/></circle></svg>');
+            background-size: cover, 200px 200px;
             display: flex;
             justify-content: center;
             align-items: flex-start;
             overflow: hidden;
             z-index: 1;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(255, 99, 71, 0.3), inset 0 0 50px rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 99, 71, 0.5);
         }
 
         .booger {
-            width: 40px;
-            height: 40px;
-            background-image: url('https://i.pinimg.com/736x/df/35/15/df351550781c0158c5fa106e74fd0813.jpg');
-            background-size: cover;
+            width: 12px;
+            height: 20px;
+            background: linear-gradient(45deg, #32cd32, #228b22);
             position: absolute;
-            z-index: 1;
-            animation: moveBooger 1s linear;
+            z-index: 5;
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            box-shadow: 0 0 10px #32cd32;
+            animation: boogerTrail 0.1s linear infinite;
+        }
+
+        @keyframes boogerTrail {
+            0% { box-shadow: 0 0 10px #32cd32, 0 5px 5px rgba(50, 205, 50, 0.5); }
+            100% { box-shadow: 0 0 15px #32cd32, 0 10px 10px rgba(50, 205, 50, 0.3); }
         }
 
         .alien {
-            width: 100px;
-            height: 100px;
-            background-image: url('https://tse1.mm.bing.net/th/id/OIP.FtpE4BaUpi3a7BoqLVSchAAAAA?rs=1&pid=ImgDetMain&o=7&rm=3');
-            background-size: cover;
+            width: 80px;
+            height: 80px;
             position: absolute;
             z-index: 2;
-            transition: all 0.2s ease-in;
-            background-color: #fff;
             border-radius: 50%;
+            transition: all 0.1s ease;
+            cursor: pointer;
         }
 
-        #score, #timer {
-            font-size: 24px;
-            margin-top: 20px;
-            color: #fff;
-            z-index: 10;
+        .alien-normal {
+            background: radial-gradient(circle at 30% 30%, #90EE90, #32CD32, #228B22);
+            box-shadow: 0 0 20px rgba(50, 205, 50, 0.6);
+            animation: alienFloat 2s ease-in-out infinite alternate;
+        }
+
+        .alien-fast {
+            background: radial-gradient(circle at 30% 30%, #FF69B4, #FF1493, #DC143C);
+            box-shadow: 0 0 20px rgba(255, 20, 147, 0.6);
+            animation: alienSpin 1s linear infinite, alienFloat 1s ease-in-out infinite alternate;
+        }
+
+        .alien-boss {
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle at 30% 30%, #8A2BE2, #4B0082, #2E0854);
+            box-shadow: 0 0 30px rgba(138, 43, 226, 0.8);
+            animation: bossGlow 1.5s ease-in-out infinite alternate, alienFloat 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes alienFloat {
+            0% { transform: translateY(0px) scale(1); }
+            100% { transform: translateY(-10px) scale(1.1); }
+        }
+
+        @keyframes alienSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes bossGlow {
+            0% { box-shadow: 0 0 30px rgba(138, 43, 226, 0.8); }
+            100% { box-shadow: 0 0 50px rgba(138, 43, 226, 1), 0 0 80px rgba(138, 43, 226, 0.5); }
+        }
+
+        .explosion {
             position: absolute;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, #FFD700, #FF4500, transparent);
+            border-radius: 50%;
+            animation: explode 0.5s ease-out forwards;
+            pointer-events: none;
+            z-index: 10;
         }
 
-        #score {
+        @keyframes explode {
+            0% { transform: scale(0); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.8; }
+            100% { transform: scale(3); opacity: 0; }
+        }
+
+        .powerup {
+            width: 40px;
+            height: 40px;
+            position: absolute;
+            z-index: 3;
+            border-radius: 50%;
+            animation: powerupFloat 2s ease-in-out infinite alternate, powerupGlow 1s ease-in-out infinite alternate;
+            cursor: pointer;
+        }
+
+        .powerup-rapid {
+            background: radial-gradient(circle, #FFD700, #FFA500);
+            box-shadow: 0 0 15px #FFD700;
+        }
+
+        .powerup-multi {
+            background: radial-gradient(circle, #00CED1, #008B8B);
+            box-shadow: 0 0 15px #00CED1;
+        }
+
+        @keyframes powerupFloat {
+            0% { transform: translateY(0px) rotate(0deg); }
+            100% { transform: translateY(-15px) rotate(180deg); }
+        }
+
+        @keyframes powerupGlow {
+            0% { box-shadow: 0 0 15px currentColor; }
+            100% { box-shadow: 0 0 30px currentColor, 0 0 50px currentColor; }
+        }
+
+        #gameStats {
+            position: absolute;
             top: 10px;
             left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            z-index: 10;
         }
 
-        #timer {
-            top: 10px;
-            right: 20px;
+        .stat {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 10px;
+            border: 2px solid rgba(255, 99, 71, 0.5);
+            box-shadow: 0 0 15px rgba(255, 99, 71, 0.3);
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        #comboMeter {
+            position: absolute;
+            top: 80px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 10px;
+            border: 2px solid #32cd32;
+            min-width: 150px;
+        }
+
+        #comboBar {
+            width: 100%;
+            height: 10px;
+            background: rgba(50, 205, 50, 0.3);
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        #comboFill {
+            height: 100%;
+            background: linear-gradient(90deg, #32cd32, #90ee90);
+            width: 0%;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px #32cd32;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
         }
 
         button {
-            margin-top: 30px;
             padding: 12px 24px;
-            font-size: 18px;
+            font-size: 16px;
             cursor: pointer;
-            background-color: #ff6347;
+            background: linear-gradient(45deg, #ff6347, #ff4500);
             border: none;
             color: white;
-            border-radius: 5px;
-            transition: background-color 0.3s ease;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 99, 71, 0.3);
+            font-weight: bold;
         }
 
         button:hover {
-            background-color: #e74c3c;
+            background: linear-gradient(45deg, #ff4500, #ff1744);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 99, 71, 0.4);
         }
 
-        #resetBtn {
-            background-color: #ff6347;
-            border: none;
-            color: white;
+        button:active {
+            transform: translateY(0px);
         }
 
-        @keyframes moveBooger {
-            0% { transform: scale(0); opacity: 1; }
-            50% { transform: scale(1.5); opacity: 0.5; }
-            100% { transform: scale(0); opacity: 0; }
+        .difficulty-selector {
+            margin-top: 15px;
         }
 
-        @keyframes moveAlien {
-            0% { top: -50px; left: 50%; }
-            100% { top: 100vh; left: 50%; }
+        .difficulty-btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            margin: 0 5px;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        .difficulty-btn.active {
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+            box-shadow: 0 0 20px rgba(33, 150, 243, 0.5);
+        }
+
+        #instructions {
+            margin-top: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid rgba(255, 99, 71, 0.3);
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .crosshair {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ff6347;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 15;
+            opacity: 0.7;
+            animation: crosshairPulse 1s ease-in-out infinite alternate;
+        }
+
+        @keyframes crosshairPulse {
+            0% { transform: scale(1); opacity: 0.7; }
+            100% { transform: scale(1.2); opacity: 0.9; }
         }
     </style>
 </head>
 <body>
-
     <div id="gameContainer">
-        <h1>Alien Booger Blaster</h1>
+        <h1>Enhanced Alien Booger Blaster</h1>
 
-        <div id="gameArea"></div>
+        <div id="gameArea">
+            <div id="gameStats">
+                <div class="stat" id="score">Score: 0</div>
+                <div class="stat" id="timer">Time: 60</div>
+                <div class="stat" id="wave">Wave: 1</div>
+                <div class="stat" id="lives">Lives: 3</div>
+            </div>
+            
+            <div id="comboMeter">
+                <div>Combo: <span id="comboCount">0</span>x</div>
+                <div id="comboBar">
+                    <div id="comboFill"></div>
+                </div>
+            </div>
+        </div>
 
-        <div id="score">Score: 0</div>
-        <div id="timer">Time Left: 30</div>
+        <div class="controls">
+            <button id="startBtn">Start Game</button>
+            <button id="pauseBtn">Pause</button>
+            <button id="resetBtn">Reset</button>
+        </div>
 
-        <button id="resetBtn">Reset Game</button>
+        <div class="difficulty-selector">
+            <span>Difficulty: </span>
+            <button class="difficulty-btn active" data-difficulty="easy">Easy</button>
+            <button class="difficulty-btn" data-difficulty="normal">Normal</button>
+            <button class="difficulty-btn" data-difficulty="hard">Hard</button>
+            <button class="difficulty-btn" data-difficulty="insane">Insane</button>
+        </div>
+
+        <div id="instructions">
+            <strong>How to Play:</strong><br>
+            • Click to shoot boogers at aliens<br>
+            • <span style="color: #90EE90;">Green aliens</span>: 10 points | <span style="color: #FF69B4;">Pink aliens</span>: 25 points (fast) | <span style="color: #8A2BE2;">Purple aliens</span>: 50 points (boss)<br>
+            • <span style="color: #FFD700;">Gold powerups</span>: Rapid fire | <span style="color: #00CED1;">Cyan powerups</span>: Multi-shot<br>
+            • Build combos for bonus points! Chain hits without missing to increase your multiplier<br>
+            • Survive waves of increasing difficulty - new wave every 15 seconds
+        </div>
     </div>
 
     <script>
-        let score = 0;
-        let timeLeft = 30;
-        let timerInterval;
-        let alienInterval;
-        let musicStarted = false; // To track if music has been started by user action
-        const scoreDisplay = document.getElementById("score");
-        const timerDisplay = document.getElementById("timer");
-        const resetBtn = document.getElementById("resetBtn");
-        const gameArea = document.getElementById("gameArea");
-
-        // Sound variables with updated background music
-        const shootSound = new Audio('https://www.soundjay.com/button/beep-07.wav'); // Sound for shooting boogers
-        const hitSound = new Audio('https://www.soundjay.com/button/beep-08b.wav');  // Sound when alien is hit
-        const bgMusic = new Audio('path_to_your_music/AlienSwomp.mp3');   // Updated background music for the game
-
-        bgMusic.loop = true;  // Loop the background music
-        bgMusic.volume = 0.2; // Adjust volume to be softer
-
-        // Ensure the background music is loaded
-        bgMusic.load();
-
-        // Start music and sounds after first click
-        window.addEventListener("click", () => {
-            if (!musicStarted) {
-                bgMusic.play().catch((error) => { // Try to play the music and catch errors
-                    console.log("Error playing background music:", error);
-                });
-                shootSound.load(); // Ensure the shoot sound is preloaded
-                hitSound.load(); // Ensure the hit sound is preloaded
-                musicStarted = true;
+        let gameState = {
+            score: 0,
+            timeLeft: 60,
+            wave: 1,
+            lives: 3,
+            combo: 0,
+            comboMultiplier: 1,
+            maxCombo: 0,
+            difficulty: 'normal',
+            gameRunning: false,
+            gamePaused: false,
+            powerups: {
+                rapidFire: 0,
+                multiShot: 0
             }
+        };
+
+        let gameIntervals = {
+            timer: null,
+            alienSpawner: null,
+            powerupSpawner: null,
+            waveManager: null
+        };
+
+        let difficultySettings = {
+            easy: { alienSpeed: 3000, alienCount: 1, timeLimit: 90 },
+            normal: { alienSpeed: 2000, alienCount: 2, timeLimit: 60 },
+            hard: { alienSpeed: 1200, alienCount: 3, timeLimit: 45 },
+            insane: { alienSpeed: 800, alienCount: 4, timeLimit: 30 }
+        };
+
+        const gameArea = document.getElementById('gameArea');
+        const elements = {
+            score: document.getElementById('score'),
+            timer: document.getElementById('timer'),
+            wave: document.getElementById('wave'),
+            lives: document.getElementById('lives'),
+            comboCount: document.getElementById('comboCount'),
+            comboFill: document.getElementById('comboFill'),
+            startBtn: document.getElementById('startBtn'),
+            pauseBtn: document.getElementById('pauseBtn'),
+            resetBtn: document.getElementById('resetBtn')
+        };
+
+        // Crosshair cursor
+        const crosshair = document.createElement('div');
+        crosshair.className = 'crosshair';
+        document.body.appendChild(crosshair);
+
+        document.addEventListener('mousemove', (e) => {
+            crosshair.style.left = (e.clientX - 10) + 'px';
+            crosshair.style.top = (e.clientY - 10) + 'px';
         });
 
-        // Generate random alien positions
-        function generateAlien() {
-            const alien = document.createElement("div");
-            alien.classList.add("alien");
+        // Difficulty selection
+        document.querySelectorAll('.difficulty-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                gameState.difficulty = btn.dataset.difficulty;
+            });
+        });
+
+        function createExplosion(x, y) {
+            const explosion = document.createElement('div');
+            explosion.className = 'explosion';
+            explosion.style.left = (x - 50) + 'px';
+            explosion.style.top = (y - 50) + 'px';
+            gameArea.appendChild(explosion);
+            setTimeout(() => explosion.remove(), 500);
+        }
+
+        function createAlien(type = 'normal') {
+            const alien = document.createElement('div');
+            alien.className = `alien alien-${type}`;
+            
+            const x = Math.random() * (window.innerWidth - 120);
+            alien.style.left = x + 'px';
+            alien.style.top = '-100px';
+            
+            let points, speed, health;
+            switch(type) {
+                case 'fast':
+                    points = 25;
+                    speed = 3;
+                    health = 1;
+                    break;
+                case 'boss':
+                    points = 50;
+                    speed = 1;
+                    health = 3;
+                    break;
+                default:
+                    points = 10;
+                    speed = 2;
+                    health = 1;
+            }
+            
+            alien.dataset.points = points;
+            alien.dataset.health = health;
+            alien.dataset.maxHealth = health;
+            
             gameArea.appendChild(alien);
-
-            const x = Math.random() * (window.innerWidth - 100);
-            alien.style.left = `${x}px`;
-
-            alien.addEventListener("click", () => {
-                alien.remove();
-                score += 10;
-                scoreDisplay.textContent = `Score: ${score}`;
-                playHitSound();
+            
+            alien.addEventListener('click', (e) => {
+                e.stopPropagation();
+                hitAlien(alien);
             });
-
-            alien.style.animationDuration = `${Math.random() * 3 + 2}s`;
-
-            setTimeout(() => {
-                alien.remove();
-            }, 5000);
-        }
-
-        // Shoot boogers on mouse click
-        function shootBooger(event) {
-            shootSound.play().catch((error) => {
-                console.log("Error playing shoot sound:", error);
-            });
-            const booger = document.createElement("div");
-            booger.classList.add("booger");
-            gameArea.appendChild(booger);
-
-            const boogerX = event.clientX - 20;
-            const boogerY = event.clientY - 20;
-            booger.style.left = `${boogerX}px`;
-            booger.style.top = `${boogerY}px`;
-
-            let boogerMove = setInterval(() => {
-                const boogerTop = parseInt(booger.style.top);
-                if (boogerTop <= 0) {
-                    clearInterval(boogerMove);
-                    booger.remove();
+            
+            const moveInterval = setInterval(() => {
+                if (gameState.gamePaused) return;
+                
+                const currentTop = parseInt(alien.style.top);
+                if (currentTop > window.innerHeight) {
+                    clearInterval(moveInterval);
+                    alien.remove();
+                    loseLife();
                 } else {
-                    booger.style.top = `${boogerTop - 5}px`;
+                    alien.style.top = (currentTop + speed) + 'px';
                 }
-            }, 10);
+            }, 50);
+            
+            setTimeout(() => {
+                clearInterval(moveInterval);
+                if (alien.parentNode) {
+                    alien.remove();
+                    loseLife();
+                }
+            }, 8000);
         }
 
-        // Timer countdown
+        function hitAlien(alien) {
+            const health = parseInt(alien.dataset.health) - 1;
+            alien.dataset.health = health;
+            
+            const rect = alien.getBoundingClientRect();
+            const x = rect.left + rect.width / 2;
+            const y = rect.top + rect.height / 2;
+            
+            if (health <= 0) {
+                const points = parseInt(alien.dataset.points);
+                gameState.combo++;
+                gameState.comboMultiplier = Math.min(Math.floor(gameState.combo / 3) + 1, 10);
+                gameState.maxCombo = Math.max(gameState.maxCombo, gameState.combo);
+                
+                const finalPoints = points * gameState.comboMultiplier;
+                gameState.score += finalPoints;
+                
+                createExplosion(x, y);
+                alien.remove();
+                
+                // Chance to drop powerup
+                if (Math.random() < 0.1) {
+                    createPowerup(x, y);
+                }
+            } else {
+                // Visual feedback for damaged alien
+                alien.style.filter = 'brightness(150%) saturate(200%)';
+                setTimeout(() => {
+                    if (alien.parentNode) {
+                        alien.style.filter = '';
+                    }
+                }, 200);
+            }
+            
+            updateComboDisplay();
+            updateDisplay();
+        }
+
+        function createPowerup(x, y) {
+            const types = ['rapid', 'multi'];
+            const type = types[Math.floor(Math.random() * types.length)];
+            
+            const powerup = document.createElement('div');
+            powerup.className = `powerup powerup-${type}`;
+            powerup.style.left = (x - 20) + 'px';
+            powerup.style.top = y + 'px';
+            
+            gameArea.appendChild(powerup);
+            
+            powerup.addEventListener('click', (e) => {
+                e.stopPropagation();
+                collectPowerup(type);
+                powerup.remove();
+            });
+            
+            const moveInterval = setInterval(() => {
+                if (gameState.gamePaused) return;
+                const currentTop = parseInt(powerup.style.top);
+                if (currentTop > window.innerHeight) {
+                    clearInterval(moveInterval);
+                    powerup.remove();
+                } else {
+                    powerup.style.top = (currentTop + 1) + 'px';
+                }
+            }, 50);
+            
+            setTimeout(() => {
+                clearInterval(moveInterval);
+                if (powerup.parentNode) powerup.remove();
+            }, 10000);
+        }
+
+        function collectPowerup(type) {
+            switch(type) {
+                case 'rapid':
+                    gameState.powerups.rapidFire = Date.now() + 10000; // 10 seconds
+                    break;
+                case 'multi':
+                    gameState.powerups.multiShot = Date.now() + 15000; // 15 seconds
+                    break;
+            }
+        }
+
+        function shootBooger(e) {
+            if (!gameState.gameRunning || gameState.gamePaused) return;
+            
+            const shots = gameState.powerups.multiShot > Date.now() ? 3 : 1;
+            const isRapid = gameState.powerups.rapidFire > Date.now();
+            
+            for (let i = 0; i < shots; i++) {
+                setTimeout(() => {
+                    const booger = document.createElement('div');
+                    booger.className = 'booger';
+                    
+                    const offsetX = (i - Math.floor(shots/2)) * 20;
+                    booger.style.left = (e.clientX - 6 + offsetX) + 'px';
+                    booger.style.top = (e.clientY - 10) + 'px';
+                    
+                    gameArea.appendChild(booger);
+                    
+                    const moveInterval = setInterval(() => {
+                        if (gameState.gamePaused) return;
+                        const currentTop = parseInt(booger.style.top);
+                        if (currentTop <= 0) {
+                            clearInterval(moveInterval);
+                            booger.remove();
+                            gameState.combo = 0; // Reset combo on miss
+                            updateComboDisplay();
+                        } else {
+                            booger.style.top = (currentTop - 8) + 'px';
+                        }
+                    }, 16);
+                }, i * (isRapid ? 50 : 100));
+            }
+        }
+
+        function loseLife() {
+            gameState.lives--;
+            gameState.combo = 0; // Reset combo on life lost
+            updateComboDisplay();
+            
+            if (gameState.lives <= 0) {
+                endGame();
+            }
+        }
+
+        function updateComboDisplay() {
+            elements.comboCount.textContent = gameState.combo;
+            const comboPercent = Math.min((gameState.combo % 3) / 3 * 100, 100);
+            elements.comboFill.style.width = comboPercent + '%';
+            
+            if (gameState.comboMultiplier > 1) {
+                elements.comboCount.style.color = '#FFD700';
+                elements.comboCount.style.textShadow = '0 0 10px #FFD700';
+            } else {
+                elements.comboCount.style.color = '';
+                elements.comboCount.style.textShadow = '';
+            }
+        }
+
+        function updateDisplay() {
+            elements.score.textContent = `Score: ${gameState.score}`;
+            elements.timer.textContent = `Time: ${gameState.timeLeft}`;
+            elements.wave.textContent = `Wave: ${gameState.wave}`;
+            elements.lives.textContent = `Lives: ${gameState.lives}`;
+        }
+
+        function startWaveManager() {
+            gameIntervals.waveManager = setInterval(() => {
+                if (gameState.gamePaused) return;
+                gameState.wave++;
+                updateDisplay();
+            }, 15000);
+        }
+
+        function startAlienSpawner() {
+            const settings = difficultySettings[gameState.difficulty];
+            
+            gameIntervals.alienSpawner = setInterval(() => {
+                if (gameState.gamePaused) return;
+                
+                for (let i = 0; i < settings.alienCount + Math.floor(gameState.wave / 3); i++) {
+                    setTimeout(() => {
+                        if (!gameState.gameRunning) return;
+                        
+                        let alienType = 'normal';
+                        const rand = Math.random();
+                        
+                        if (gameState.wave >= 3 && rand < 0.1) {
+                            alienType = 'boss';
+                        } else if (gameState.wave >= 2 && rand < 0.3) {
+                            alienType = 'fast';
+                        }
+                        
+                        createAlien(alienType);
+                    }, i * 500);
+                }
+            }, Math.max(settings.alienSpeed - (gameState.wave * 100), 800));
+        }
+
+        function startPowerupSpawner() {
+            gameIntervals.powerupSpawner = setInterval(() => {
+                if (gameState.gamePaused || Math.random() > 0.3) return;
+                
+                const x = Math.random() * (window.innerWidth - 40);
+                const y = -40;
+                createPowerup(x, y);
+            }, 20000);
+        }
+
         function startTimer() {
-            timerInterval = setInterval(() => {
-                timeLeft--;
-                timerDisplay.textContent = `Time Left: ${timeLeft}`;
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    clearInterval(alienInterval);
-                    alert("Game Over! Your score: " + score);
-                    bgMusic.pause(); // Stop the background music when game ends
+            gameIntervals.timer = setInterval(() => {
+                if (gameState.gamePaused) return;
+                
+                gameState.timeLeft--;
+                updateDisplay();
+                
+                if (gameState.timeLeft <= 0) {
+                    endGame();
                 }
             }, 1000);
         }
 
-        // Reset Game
-        function resetGame() {
-            score = 0;
-            timeLeft = 30;
-            scoreDisplay.textContent = `Score: ${score}`;
-            timerDisplay.textContent = `Time Left: ${timeLeft}`;
-            gameArea.innerHTML = '';
-            clearInterval(timerInterval);
-            clearInterval(alienInterval);
-            startGame();
-        }
-
-        // Start Game
         function startGame() {
-            alienInterval = setInterval(generateAlien, 2000);
+            gameState = {
+                score: 0,
+                timeLeft: difficultySettings[gameState.difficulty].timeLimit,
+                wave: 1,
+                lives: 3,
+                combo: 0,
+                comboMultiplier: 1,
+                maxCombo: 0,
+                difficulty: gameState.difficulty,
+                gameRunning: true,
+                gamePaused: false,
+                powerups: { rapidFire: 0, multiShot: 0 }
+            };
+            
+            updateDisplay();
+            updateComboDisplay();
+            
             startTimer();
+            startAlienSpawner();
+            startPowerupSpawner();
+            startWaveManager();
+            
+            elements.startBtn.textContent = 'Restart';
         }
 
-        // Play sound on hit
-        function playHitSound() {
-            hitSound.play().catch((error) => {
-                console.log("Error playing hit sound:", error);
+        function pauseGame() {
+            gameState.gamePaused = !gameState.gamePaused;
+            elements.pauseBtn.textContent = gameState.gamePaused ? 'Resume' : 'Pause';
+        }
+
+        function resetGame() {
+            Object.values(gameIntervals).forEach(interval => {
+                if (interval) clearInterval(interval);
             });
+            
+            gameState.gameRunning = false;
+            gameState.gamePaused = false;
+            
+            gameArea.innerHTML = `
+                <div id="gameStats">
+                    <div class="stat" id="score">Score: 0</div>
+                    <div class="stat" id="timer">Time: 60</div>
+                    <div class="stat" id="wave">Wave: 1</div>
+                    <div class="stat" id="lives">Lives: 3</div>
+                </div>
+                <div id="comboMeter">
+                    <div>Combo: <span id="comboCount">0</span>x</div>
+                    <div id="comboBar">
+                        <div id="comboFill"></div>
+                    </div>
+                </div>
+            `;
+            
+            // Reattach elements
+            Object.keys(elements).forEach(key => {
+                const newElement = document.getElementById(key);
+                if (newElement) elements[key] = newElement;
+            });
+            
+            elements.startBtn.textContent = 'Start Game';
+            elements.pauseBtn.textContent = 'Pause';
+            
+            updateDisplay();
+            updateComboDisplay();
         }
 
-        resetBtn.addEventListener("click", resetGame);
-        gameArea.addEventListener("click", shootBooger);
+        function endGame() {
+            gameState.gameRunning = false;
+            Object.values(gameIntervals).forEach(interval => {
+                if (interval) clearInterval(interval);
+            });
+            
+            const finalMessage = `Game Over!\n\nFinal Score: ${gameState.score}\nWaves Survived: ${gameState.wave}\nMax Combo: ${gameState.maxCombo}x\nDifficulty: ${gameState.difficulty.charAt(0).toUpperCase() + gameState.difficulty.slice(1)}`;
+            
+            setTimeout(() => alert(finalMessage), 100);
+        }
 
-        startGame();
+        // Event listeners
+        elements.startBtn.addEventListener('click', startGame);
+        elements.pauseBtn.addEventListener('click', pauseGame);
+        elements.resetBtn.addEventListener('click', resetGame);
+        gameArea.addEventListener('click', shootBooger);
+
+        // Initialize display
+        updateDisplay();
+        updateComboDisplay();
     </script>
-
 </body>
 </html>
