@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Pong Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        .game-container {
+            position: relative;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            margin-bottom: 100px;
+        }
+
+        canvas {
+            background: #000;
+            border: 3px solid #00ff88;
+            border-radius: 10px;
+            display: block;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+
+        .score {
+            position: absolute;
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+
+        .touch-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 30px;
+            z-index: 100;
+        }
+
+        .touch-btn {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(145deg, #00ff88, #00cc6a);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
+            transition: all 0.1s ease;
+            touch-action: manipulation;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+
+        .touch-btn:active {
+            transform: translateY(2px) scale(0.95);
+            background: linear-gradient(145deg, #00cc6a, #00aa55);
+        }
+
+        .control-btn {
+            background: linear-gradient(145deg, #00ff88, #00cc6a);
+            border: none;
+            border-radius: 10px;
+            padding: 15px 25px;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
+            transition: all 0.2s ease;
+            touch-action: manipulation;
+        }
+
+        .control-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 3px 10px rgba(0, 255, 136, 0.2);
+        }
+
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+        }
+
+        .game-over h2 {
+            margin-bottom: 20px;
+            color: #00ff88;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                padding: 10px;
+                margin: 10px;
+                margin-bottom: 120px;
+            }
+            
+            canvas {
+                max-width: calc(100vw - 40px);
+                max-height: 60vh;
+            }
+            
+            .score {
+                font-size: 20px;
+                top: -40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="score">Player: <span id="playerScore">0</span> | AI: <span id="aiScore">0</span></div>
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+        <div class="game-over" id="gameOver">
+            <h2 id="gameOverText">Game Over!</h2>
+            <button class="control-btn" onclick="restartGame()">Play Again</button>
+        </div>
+    </div>
+
+    <div class="touch-controls">
+        <button class="touch-btn" id="upBtn">↑</button>
+        <button class="touch-btn" id="downBtn">↓</button>
+        <button class="control-btn" onclick="togglePause()" id="pauseBtn">Pause</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gameOver = document.getElementById('gameOver');
+        const gameOverText = document.getElementById('gameOverText');
+        const playerScoreEl = document.getElementById('playerScore');
+        const aiScoreEl = document.getElementById('aiScore');
+        const pauseBtn = document.getElementById('pauseBtn');
+
+        // Game state
+        let gameRunning = true;
+        let gamePaused = false;
+
+        // Control states
+        let upPressed = false;
+        let downPressed = false;
+
+        // Audio context and sounds
+        let audioContext;
+        let sounds = {};
+
+        // Initialize audio
+        function initAudio() {
+            if (audioContext) return;
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Create sound effects
+            sounds.paddle = createBeep(200, 0.1);
+            sounds.wall = createBeep(150, 0.1);
+            sounds.score = createBeep(300, 0.3);
+            sounds.gameOver = createBeep(100, 0.5);
+        }
+
+        function createBeep(frequency, duration) {
+            return function() {
+                if (!audioContext) return;
+                
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + duration);
+            };
+        }
+
+        // Game objects
+        const ball = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            dx: 5,
+            dy: 3,
+            radius: 8,
+            speed: 5
+        };
+
+        const playerPaddle = {
+            x: 20,
+            y: canvas.height / 2 - 50,
+            width: 15,
+            height: 100,
+            speed: 8
+        };
+
+        const aiPaddle = {
+            x: canvas.width - 35,
+            y: canvas.height / 2 - 50,
+            width: 15,
+            height: 100,
+            speed: 6
+        };
+
+        let playerScore = 0;
+        let aiScore = 0;
+        const winningScore = 5;
+
+        // Input handling
+        const keys = {};
+
+        // Keyboard events
+        document.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+            initAudio();
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        // Button control functions
+        function startUp() {
+            upPressed = true;
+            initAudio();
+        }
+
+        function stopUp() {
+            upPressed = false;
+        }
+
+        function startDown() {
+            downPressed = true;
+            initAudio();
+        }
+
+        function stopDown() {
+            downPressed = false;
+        }
+
+        // Set up button events after DOM loads
+        window.addEventListener('load', function() {
+            const upBtn = document.getElementById('upBtn');
+            const downBtn = document.getElementById('downBtn');
+
+            // Up button
+            upBtn.addEventListener('mousedown', startUp);
+            upBtn.addEventListener('mouseup', stopUp);
+            upBtn.addEventListener('mouseleave', stopUp);
+            upBtn.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                startUp();
+            });
+            upBtn.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                stopUp();
+            });
+
+            // Down button  
+            downBtn.addEventListener('mousedown', startDown);
+            downBtn.addEventListener('mouseup', stopDown);
+            downBtn.addEventListener('mouseleave', stopDown);
+            downBtn.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                startDown();
+            });
+            downBtn.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                stopDown();
+            });
+
+            // Prevent context menu
+            upBtn.addEventListener('contextmenu', (e) => e.preventDefault());
+            downBtn.addEventListener('contextmenu', (e) => e.preventDefault());
+        });
+
+        // Canvas touch events for direct paddle control
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            initAudio();
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            const touchY = touch.clientY - rect.top;
+            const canvasRatio = canvas.height / rect.height;
+            const gameY = touchY * canvasRatio;
+            playerPaddle.y = gameY - playerPaddle.height / 2;
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            const touchY = touch.clientY - rect.top;
+            const canvasRatio = canvas.height / rect.height;
+            const gameY = touchY * canvasRatio;
+            playerPaddle.y = gameY - playerPaddle.height / 2;
+        });
+
+        // Game functions
+        function update() {
+            if (!gameRunning || gamePaused) return;
+
+            // Player paddle movement
+            if (keys['ArrowUp'] || keys['w'] || upPressed) {
+                playerPaddle.y -= playerPaddle.speed;
+            }
+            if (keys['ArrowDown'] || keys['s'] || downPressed) {
+                playerPaddle.y += playerPaddle.speed;
+            }
+
+            // Keep player paddle in bounds
+            if (playerPaddle.y < 0) playerPaddle.y = 0;
+            if (playerPaddle.y > canvas.height - playerPaddle.height) {
+                playerPaddle.y = canvas.height - playerPaddle.height;
+            }
+
+            // AI paddle movement
+            const aiCenter = aiPaddle.y + aiPaddle.height / 2;
+            if (aiCenter < ball.y - 35) {
+                aiPaddle.y += aiPaddle.speed;
+            } else if (aiCenter > ball.y + 35) {
+                aiPaddle.y -= aiPaddle.speed;
+            }
+
+            // Keep AI paddle in bounds
+            if (aiPaddle.y < 0) aiPaddle.y = 0;
+            if (aiPaddle.y > canvas.height - aiPaddle.height) {
+                aiPaddle.y = canvas.height - aiPaddle.height;
+            }
+
+            // Ball movement
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+
+            // Ball collision with top/bottom walls
+            if (ball.y <= ball.radius || ball.y >= canvas.height - ball.radius) {
+                ball.dy = -ball.dy;
+                if (sounds.wall) sounds.wall();
+            }
+
+            // Ball collision with paddles
+            if (ball.x - ball.radius <= playerPaddle.x + playerPaddle.width &&
+                ball.y >= playerPaddle.y &&
+                ball.y <= playerPaddle.y + playerPaddle.height) {
+                ball.dx = Math.abs(ball.dx);
+                ball.dy += (ball.y - (playerPaddle.y + playerPaddle.height / 2)) * 0.1;
+                if (sounds.paddle) sounds.paddle();
+            }
+
+            if (ball.x + ball.radius >= aiPaddle.x &&
+                ball.y >= aiPaddle.y &&
+                ball.y <= aiPaddle.y + aiPaddle.height) {
+                ball.dx = -Math.abs(ball.dx);
+                ball.dy += (ball.y - (aiPaddle.y + aiPaddle.height / 2)) * 0.1;
+                if (sounds.paddle) sounds.paddle();
+            }
+
+            // Scoring
+            if (ball.x < 0) {
+                aiScore++;
+                if (sounds.score) sounds.score();
+                resetBall();
+                updateScore();
+            } else if (ball.x > canvas.width) {
+                playerScore++;
+                if (sounds.score) sounds.score();
+                resetBall();
+                updateScore();
+            }
+
+            // Check for game over
+            if (playerScore >= winningScore || aiScore >= winningScore) {
+                endGame();
+            }
+        }
+
+        function resetBall() {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            ball.dx = (Math.random() > 0.5 ? 1 : -1) * ball.speed;
+            ball.dy = (Math.random() - 0.5) * ball.speed;
+        }
+
+        function updateScore() {
+            playerScoreEl.textContent = playerScore;
+            aiScoreEl.textContent = aiScore;
+        }
+
+        function endGame() {
+            gameRunning = false;
+            if (sounds.gameOver) sounds.gameOver();
+            gameOverText.textContent = playerScore >= winningScore ? 'You Win!' : 'AI Wins!';
+            gameOver.style.display = 'block';
+        }
+
+        function draw() {
+            // Clear canvas
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw center line
+            ctx.setLineDash([5, 15]);
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.strokeStyle = '#00ff88';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw paddles
+            ctx.fillStyle = '#00ff88';
+            ctx.fillRect(playerPaddle.x, playerPaddle.y, playerPaddle.width, playerPaddle.height);
+            ctx.fillRect(aiPaddle.x, aiPaddle.y, aiPaddle.width, aiPaddle.height);
+
+            // Draw ball
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#fff';
+            ctx.fill();
+            ctx.strokeStyle = '#00ff88';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw pause overlay
+            if (gamePaused) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#00ff88';
+                ctx.font = '48px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2);
+            }
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function togglePause() {
+            if (!gameRunning) return;
+            gamePaused = !gamePaused;
+            pauseBtn.textContent = gamePaused ? 'Resume' : 'Pause';
+        }
+
+        function restartGame() {
+            gameRunning = true;
+            gamePaused = false;
+            playerScore = 0;
+            aiScore = 0;
+            updateScore();
+            resetBall();
+            gameOver.style.display = 'none';
+            pauseBtn.textContent = 'Pause';
+        }
+
+        // Resize canvas for mobile
+        function resizeCanvas() {
+            const maxWidth = Math.min(800, window.innerWidth - 40);
+            const maxHeight = Math.min(400, window.innerHeight * 0.6);
+            
+            if (maxWidth < 800) {
+                const scale = maxWidth / 800;
+                canvas.style.width = maxWidth + 'px';
+                canvas.style.height = (400 * scale) + 'px';
+            }
+        }
+
+        // Initialize
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        gameLoop();
+    </script>
+</body>
+</html>
